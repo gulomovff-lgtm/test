@@ -37,11 +37,27 @@ const GuestHistoryModal = ({ guest, onClose }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content guest-history-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={(e) => {
+      // Only close if clicking directly on overlay, not on modal content
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    }}>
+      <div 
+        className="modal-content guest-history-modal" 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="guest-history-title"
+      >
         <div className="modal-header">
-          <h2>История гостя + Карточка клиента</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <h2 id="guest-history-title">История гостя + Карточка клиента</h2>
+          <button 
+            className="close-button" 
+            onClick={onClose}
+            aria-label="Закрыть модальное окно"
+          >
+            ×
+          </button>
         </div>
 
         <div className="modal-body">
@@ -152,8 +168,8 @@ const GuestHistoryModal = ({ guest, onClose }) => {
                 {history.debts.map(debt => (
                   <div key={debt.id} className="debt-item">
                     <span className="debt-date">{new Date(debt.date).toLocaleDateString()}</span>
-                    <span className="debt-amount" style={{ color: 'red' }}>
-                      -{debt.amount.toLocaleString()} сум
+                    <span className="debt-amount" style={{ color: 'red', fontWeight: 'bold' }}>
+                      {debt.amount.toLocaleString()} сум
                     </span>
                   </div>
                 ))}

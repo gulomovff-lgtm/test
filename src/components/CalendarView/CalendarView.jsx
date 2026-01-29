@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCalendarGuests } from '../../services/roomService';
-import { isWithinLast7Days } from '../../utils/dateHelpers';
+import { shouldShowGuest } from '../../utils/dateHelpers';
 
 /**
  * CalendarView Component
@@ -16,39 +16,8 @@ const CalendarView = ({ selectedDate }) => {
       try {
         const allGuests = await fetchCalendarGuests(selectedDate);
         
-        // Requirement #3: Filter to show active OR recently checked out guests
-        // Don't hide guests who checked out today at 12:00 or later
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        const visibleGuests = allGuests.filter(guest => {
-          // Show all active guests
-          if (guest.status === 'active') {
-            return true;
-          }
-          
-          // For checked_out guests, show if:
-          // 1. Checkout was within last 7 days, OR
-          // 2. Checkout was today (regardless of time)
-          if (guest.status === 'checked_out') {
-            const checkoutDate = new Date(guest.checkOutDate);
-            const checkoutDay = new Date(
-              checkoutDate.getFullYear(), 
-              checkoutDate.getMonth(), 
-              checkoutDate.getDate()
-            );
-            
-            // If checked out today, always show
-            if (checkoutDay.getTime() === today.getTime()) {
-              return true;
-            }
-            
-            // Otherwise check if within last 7 days
-            return isWithinLast7Days(guest.checkOutDate);
-          }
-          
-          return false;
-        });
+        // Requirement #3: Filter using centralized logic for consistency
+        const visibleGuests = allGuests.filter(shouldShowGuest);
         
         setGuests(visibleGuests);
       } catch (error) {
@@ -124,7 +93,7 @@ const CalendarView = ({ selectedDate }) => {
                 <td>
                   {guest.debt > 0 ? (
                     <span className="debt-amount" style={{ color: 'red', fontWeight: 'bold' }}>
-                      -{guest.debt.toLocaleString()} сум
+                      {guest.debt.toLocaleString()} сум
                     </span>
                   ) : (
                     <span>—</span>

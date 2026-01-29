@@ -13,7 +13,8 @@ export const fetchGuestHistory = async (guestId) => {
   const response = await fetch(`${API_BASE_URL}/guests/${guestId}/history`);
   
   if (!response.ok) {
-    throw new Error('Failed to fetch guest history');
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Failed to fetch guest history (${response.status}): ${errorText}`);
   }
   
   return await response.json();

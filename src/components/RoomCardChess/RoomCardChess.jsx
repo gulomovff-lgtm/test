@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchRoomGuests } from '../../services/roomService';
-import { isWithinLast7Days } from '../../utils/dateHelpers';
+import { shouldShowGuest } from '../../utils/dateHelpers';
 
 /**
  * RoomCardChess Component
@@ -17,13 +17,8 @@ const RoomCardChess = ({ roomNumber }) => {
         const allGuests = await fetchRoomGuests(roomNumber);
         
         // Requirement #3: Show ALL guests (active OR checked_out in last 7 days)
-        const visibleGuests = allGuests.filter(guest => {
-          const isActive = guest.status === 'active';
-          const isRecentCheckout = guest.status === 'checked_out' && 
-                                   isWithinLast7Days(guest.checkOutDate);
-          
-          return isActive || isRecentCheckout;
-        });
+        // Use centralized filtering logic for consistency
+        const visibleGuests = allGuests.filter(shouldShowGuest);
         
         setGuests(visibleGuests);
       } catch (error) {
@@ -104,7 +99,7 @@ const RoomCardChess = ({ roomNumber }) => {
               {/* Show debt amount in red if exists */}
               {guest.debt > 0 && (
                 <div className="debt-info" style={getDebtStyle(guest.debt)}>
-                  Долг: -{guest.debt.toLocaleString()} сум
+                  Долг: {guest.debt.toLocaleString()} сум
                 </div>
               )}
               

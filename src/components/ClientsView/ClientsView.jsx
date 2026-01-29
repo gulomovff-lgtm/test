@@ -10,9 +10,15 @@ const ClientsView = () => {
   const [selectedGuest, setSelectedGuest] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clients, setClients] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
   
   const isAdmin = user?.role === 'admin';
+
+  // TODO: Add useEffect to fetch clients data from API
+  // useEffect(() => {
+  //   fetchClients().then(setClients);
+  // }, []);
 
   const handleClientClick = (client) => {
     setSelectedGuest(client);
@@ -24,6 +30,36 @@ const ClientsView = () => {
     setSelectedGuest(null);
   };
 
+  const handleAddNew = () => {
+    // TODO: Implement add new client functionality
+    console.log('Add new client');
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    // TODO: Implement client search by country
+  };
+
+  const handleExport = () => {
+    // TODO: Implement export functionality
+    console.log('Export clients');
+  };
+
+  const handleImport = () => {
+    // TODO: Implement import functionality
+    console.log('Import clients');
+  };
+
+  const handleMerge = () => {
+    // TODO: Implement merge functionality
+    console.log('Merge clients');
+  };
+
+  const handleNormalizeCountries = () => {
+    // TODO: Implement country normalization
+    console.log('Normalize countries');
+  };
+
   return (
     <div className="clients-view">
       <div className="clients-header">
@@ -31,29 +67,31 @@ const ClientsView = () => {
         
         {/* Search and basic actions available to all roles */}
         <div className="basic-actions">
-          <button onClick={() => {/* Add new client */}}>
+          <button onClick={handleAddNew}>
             Добавить нового
           </button>
           <input 
             type="text" 
             placeholder="Поиск по странам..." 
             className="country-search"
+            value={searchQuery}
+            onChange={handleSearch}
           />
         </div>
 
         {/* Admin-only actions - hidden for cashiers */}
         {isAdmin && (
           <div className="admin-actions">
-            <button onClick={() => {/* Export clients */}}>
+            <button onClick={handleExport}>
               Экспорт
             </button>
-            <button onClick={() => {/* Import clients */}}>
+            <button onClick={handleImport}>
               Импорт
             </button>
-            <button onClick={() => {/* Merge clients */}}>
+            <button onClick={handleMerge}>
               Объединить
             </button>
-            <button onClick={() => {/* Normalize countries */}}>
+            <button onClick={handleNormalizeCountries}>
               Нормализация стран
             </button>
           </div>

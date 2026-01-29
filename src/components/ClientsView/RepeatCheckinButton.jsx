@@ -27,16 +27,18 @@ const RepeatCheckinButton = ({ accommodation, guestId }) => {
         // Copy other relevant parameters
       };
       
-      await startCheckin(checkinData);
-      
-      // Navigate to check-in form or open modal with pre-filled data
-      // This would typically redirect to a check-in form component
-      window.location.href = `/checkin?preload=${guestId}&template=${accommodation.id}`;
+      // Navigate to check-in form with pre-loaded data
+      // TODO: Replace with React Router navigation (useNavigate) for better UX
+      const params = new URLSearchParams({
+        preload: guestId,
+        template: accommodation.id
+      });
+      window.location.href = `/checkin?${params.toString()}`;
       
     } catch (error) {
       console.error('Failed to start repeat check-in:', error);
+      // TODO: Replace alert with toast notification system
       alert('Ошибка при попытке повторного заселения');
-    } finally {
       setIsLoading(false);
     }
   };
