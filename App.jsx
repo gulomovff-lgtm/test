@@ -244,6 +244,9 @@ const calculateSalary = (shifts, staffMember) => {
 };
 
 // Format guest ID for display in documents
+// Shows last 8 characters with zero padding for consistent formatting
+// Note: Firebase IDs are typically 20+ character strings, so this creates
+// a readable display ID while the full ID is preserved in the guest object
 const formatGuestId = (id) => {
   return String(id || '').slice(-8).padStart(8, '0');
 };
@@ -314,6 +317,7 @@ const exportToExcel = (data, filename, headers) => {
 const printDocument = (type, guest, hostel) => {
   const totalPaid = getTotalPaid(guest);
   const balance = (guest.totalPrice || 0) - totalPaid;
+  // debt = absolute value when balance is negative, 0 otherwise
   const debt = balance < 0 ? Math.abs(balance) : 0;
   
   if (type === 'check') {
@@ -363,8 +367,11 @@ const printDocument = (type, guest, hostel) => {
           <tr><td>Цена/ночь:</td><td class="bold right">${guest.pricePerDay || 0} сум</td></tr>
           <tr><td>Итого:</td><td class="bold right">${guest.totalPrice || 0} сум</td></tr>
           <tr><td>Оплачено:</td><td class="bold right">${totalPaid} сум</td></tr>
+          ${/* Show debt in red if balance is negative */}
           ${debt > 0 ? `<tr><td class="debt">ДОЛГ:</td><td class="debt right">${debt} сум</td></tr>` : ''}
+          ${/* Show remaining balance if positive */}
           ${balance > 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
+          ${/* Show fully paid message only when exactly zero */}
           ${balance === 0 ? `<tr><td colspan="2" class="center bold" style="color: green;">✓ Полностью оплачено</td></tr>` : ''}
         </table>
         <div class="line"></div>
