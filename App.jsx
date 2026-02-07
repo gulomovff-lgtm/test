@@ -321,65 +321,268 @@ const printDocument = (type, guest, hostel) => {
   const debt = balance < 0 ? Math.abs(balance) : 0;
   
   if (type === 'check') {
-    // Receipt-style compact format for checks
-    const w = window.open('', '', 'width=350,height=650');
+    // ENHANCED Professional receipt with detailed breakdown
+    const w = window.open('', '', 'width=400,height=750');
+    
+    // Prepare payment details
+    const cashPaid = guest.cashPaid || 0;
+    const cardPaid = guest.cardPaid || 0;
+    const qrPaid = guest.qrPaid || 0;
+    const totalPaidAmount = cashPaid + cardPaid + qrPaid;
+    
+    // Calculate accommodation details
+    const numberOfDays = guest.days || 0;
+    const pricePerNight = guest.pricePerDay || 0;
+    const totalPrice = guest.totalPrice || 0;
+    
+    // Generate receipt number and date
+    const receiptNumber = formatGuestId(guest.id);
+    const receiptDate = new Date().toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
     const html = `
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Чек</title>
+        <title>Кассовый чек</title>
         <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: 'Courier New', monospace; 
-            width: 300px; 
-            padding: 15px;
-            margin: 0;
-            font-size: 12px;
+            max-width: 350px; 
+            padding: 20px;
+            margin: 0 auto;
+            font-size: 13px;
+            line-height: 1.4;
+            background: #f5f5f5;
+          }
+          .receipt {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
           }
           .center { text-align: center; }
           .bold { font-weight: bold; }
-          .line { border-top: 1px dashed #000; margin: 8px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          td { padding: 3px 0; }
+          .line { 
+            border-top: 1px dashed #000; 
+            margin: 10px 0; 
+          }
+          .double-line { 
+            border-top: 2px solid #000; 
+            margin: 12px 0; 
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+          }
+          td { 
+            padding: 4px 0; 
+            vertical-align: top;
+          }
           .right { text-align: right; }
-          .debt { color: red; font-weight: bold; }
+          .debt { color: #d32f2f; font-weight: bold; }
+          .success { color: #2e7d32; font-weight: bold; }
+          .header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .subheader {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+          }
+          .receipt-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin: 10px 0;
+          }
+          .services-table {
+            margin: 10px 0;
+          }
+          .services-table td {
+            padding: 5px 0;
+          }
+          .total-row {
+            font-size: 14px;
+            font-weight: bold;
+            padding-top: 8px !important;
+          }
+          .payment-method {
+            font-size: 12px;
+          }
+          .signature-area {
+            margin-top: 30px;
+            text-align: center;
+          }
+          .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-bottom: 1px solid #000;
+            margin: 20px auto 5px;
+          }
+          .thank-you {
+            font-size: 12px;
+            margin: 15px 0 10px;
+          }
           @media print {
+            body { 
+              background: white;
+              padding: 0;
+            }
+            .receipt {
+              box-shadow: none;
+              padding: 10px;
+            }
             button { display: none; }
+            @page {
+              margin: 10mm;
+              size: 80mm auto;
+            }
           }
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size: 14px;">${hostel?.name || 'N/A'}</div>
-        <div class="center" style="font-size: 11px;">${hostel?.address || ''}</div>
-        <div class="line"></div>
-        <div class="center bold">ЧЕК №${formatGuestId(guest.id)}</div>
-        <div class="center">${new Date().toLocaleString('ru-RU')}</div>
-        <div class="line"></div>
-        <table>
-          <tr><td>Гость:</td><td class="bold right">${guest.fullName || 'N/A'}</td></tr>
-          <tr><td>Паспорт:</td><td class="right">${guest.passport || 'N/A'}</td></tr>
-          <tr><td>Комната:</td><td class="right">${guest.roomId || 'N/A'} / Место ${guest.bedId || '-'}</td></tr>
-          <tr><td>Заезд:</td><td class="right">${new Date(guest.checkInDate).toLocaleDateString('ru-RU')}</td></tr>
-          <tr><td>Дней:</td><td class="right">${guest.days || 0}</td></tr>
-        </table>
-        <div class="line"></div>
-        <table>
-          <tr><td>Цена/ночь:</td><td class="bold right">${guest.pricePerDay || 0} сум</td></tr>
-          <tr><td>Итого:</td><td class="bold right">${guest.totalPrice || 0} сум</td></tr>
-          <tr><td>Оплачено:</td><td class="bold right">${totalPaid} сум</td></tr>
-          ${/* Show debt in red if balance is negative */}
-          ${debt > 0 ? `<tr><td class="debt">ДОЛГ:</td><td class="debt right">${debt} сум</td></tr>` : ''}
-          ${/* Show remaining balance if positive */}
-          ${balance > 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
-          ${/* Show fully paid message only when exactly zero */}
-          ${balance === 0 ? `<tr><td colspan="2" class="center bold" style="color: green;">✓ Полностью оплачено</td></tr>` : ''}
-        </table>
-        <div class="line"></div>
-        <div class="center">Спасибо за визит!</div>
-        <div class="center" style="margin-top: 20px;">
-          <button onclick="window.print()" style="padding: 8px 16px; cursor: pointer;">
-            Печать
-          </button>
+        <div class="receipt">
+          <!-- Header with hostel name and address -->
+          <div class="center header">${hostel?.name || 'ХОСТЕЛ'}</div>
+          <div class="center subheader">${hostel?.address || 'Ташкент, Узбекистан'}</div>
+          
+          <div class="double-line"></div>
+          
+          <!-- Receipt title and number -->
+          <div class="center receipt-title">КАССОВЫЙ ЧЕК №${receiptNumber}</div>
+          <div class="center subheader">${receiptDate}</div>
+          
+          <div class="line"></div>
+          
+          <!-- Guest information -->
+          <table>
+            <tr>
+              <td class="bold" colspan="2">ИНФОРМАЦИЯ О ГОСТЕ</td>
+            </tr>
+            <tr>
+              <td>Гость:</td>
+              <td class="right bold">${guest.fullName || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td>Паспорт:</td>
+              <td class="right">${guest.passport || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td>Страна:</td>
+              <td class="right">${guest.country || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td>Комната:</td>
+              <td class="right">${guest.roomId || 'N/A'}, Место ${guest.bedId || '-'}</td>
+            </tr>
+          </table>
+          
+          <div class="line"></div>
+          
+          <!-- Services breakdown -->
+          <table class="services-table">
+            <tr>
+              <td class="bold" colspan="2">УСЛУГИ</td>
+            </tr>
+            <tr>
+              <td>Проживание (${numberOfDays} ${numberOfDays === 1 ? 'день' : numberOfDays < 5 ? 'дня' : 'дней'} x ${pricePerNight.toLocaleString('ru-RU')})</td>
+              <td class="right bold">${totalPrice.toLocaleString('ru-RU')}</td>
+            </tr>
+          </table>
+          
+          <div class="line"></div>
+          
+          <!-- Total amount -->
+          <table>
+            <tr>
+              <td class="total-row">ИТОГО:</td>
+              <td class="total-row right">${totalPrice.toLocaleString('ru-RU')} сум</td>
+            </tr>
+          </table>
+          
+          <div class="double-line"></div>
+          
+          <!-- Payment breakdown -->
+          <table class="payment-method">
+            <tr>
+              <td class="bold" colspan="2">ОПЛАЧЕНО:</td>
+            </tr>
+            <tr>
+              <td>Наличные:</td>
+              <td class="right">${cashPaid.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            <tr>
+              <td>Терминал (карта):</td>
+              <td class="right">${cardPaid.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            <tr>
+              <td>QR-код:</td>
+              <td class="right">${qrPaid.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 5px;"><div class="line"></div></td>
+            </tr>
+            <tr>
+              <td class="bold">Всего оплачено:</td>
+              <td class="right bold">${totalPaidAmount.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            ${debt > 0 ? `
+            <tr>
+              <td class="debt">ДОЛГ:</td>
+              <td class="debt right">${debt.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            ` : ''}
+            ${balance > 0 ? `
+            <tr>
+              <td>К оплате:</td>
+              <td class="bold right">${balance.toLocaleString('ru-RU')} сум</td>
+            </tr>
+            ` : ''}
+            ${balance === 0 ? `
+            <tr>
+              <td colspan="2" class="center success" style="padding-top: 8px;">
+                ✓ ПОЛНОСТЬЮ ОПЛАЧЕНО
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+          
+          <div class="line"></div>
+          
+          <!-- Thank you message -->
+          <div class="center thank-you bold">
+            Спасибо за визит!
+          </div>
+          <div class="center thank-you">
+            Welcome back! • Qaytib keling!
+          </div>
+          
+          <!-- Signature area -->
+          <div class="signature-area">
+            <div class="signature-line"></div>
+            <div class="subheader">(подпись администратора)</div>
+          </div>
+          
+          <div class="center" style="margin-top: 25px;">
+            <button onclick="window.print()" 
+                    style="padding: 10px 25px; 
+                           font-size: 14px; 
+                           cursor: pointer; 
+                           background: #2196F3; 
+                           color: white; 
+                           border: none; 
+                           border-radius: 5px;
+                           font-weight: bold;">
+              🖨️ ПЕЧАТЬ
+            </button>
+          </div>
         </div>
       </body>
       </html>
@@ -2508,23 +2711,77 @@ const ReportsView = ({ guests, expenses, rooms }) => {
   const netProfit = totalRevenue - totalExpenses;
   
   const handleExport = () => {
-    const data = filteredGuests.map(g => ({
-      'ФИО': g.fullName,
-      'Паспорт': g.passport,
-      'Страна': g.country,
-      'Комната': g.roomId,
-      'Заселение': getLocalDateString(g.checkInDate),
-      'Выселение': getLocalDateString(g.checkOutDate),
-      'Дней': g.days,
-      'Цена': g.totalPrice,
-      'Оплачено': getTotalPaid(g),
-      'Баланс': g.totalPrice - getTotalPaid(g),
+    // Создаем данные для доходов (гости)
+    const incomeData = filteredGuests.map(g => ({
+      'Тип': 'ДОХОД',
+      'Дата': getLocalDateString(g.checkInDate),
+      'Описание': `${g.fullName} - Проживание (${g.days} дн.)`,
+      'Детали': `Паспорт: ${g.passport}, Страна: ${g.country}, Комната: ${g.roomId}`,
+      'Сумма': getTotalPaid(g),
+      'Способ оплаты': `Нал: ${g.cashPaid || 0}, Карта: ${g.cardPaid || 0}, QR: ${g.qrPaid || 0}`,
     }));
     
+    // Создаем данные для расходов
+    const expenseData = filteredExpenses.map(e => ({
+      'Тип': 'РАСХОД',
+      'Дата': getLocalDateString(e.date),
+      'Описание': e.description || 'Без описания',
+      'Детали': e.category || '-',
+      'Сумма': e.amount || 0,
+      'Способ оплаты': e.paymentMethod || '-',
+    }));
+    
+    // Объединяем доходы и расходы
+    const allData = [...incomeData, ...expenseData];
+    
+    // Сортируем по дате
+    allData.sort((a, b) => {
+      const dateA = new Date(a['Дата'].split('.').reverse().join('-'));
+      const dateB = new Date(b['Дата'].split('.').reverse().join('-'));
+      return dateA - dateB;
+    });
+    
+    // Добавляем итоговые строки
+    allData.push({
+      'Тип': '',
+      'Дата': '',
+      'Описание': '',
+      'Детали': '',
+      'Сумма': '',
+      'Способ оплаты': '',
+    });
+    
+    allData.push({
+      'Тип': 'ИТОГО',
+      'Дата': '',
+      'Описание': 'Доходы:',
+      'Детали': '',
+      'Сумма': totalRevenue,
+      'Способ оплаты': '',
+    });
+    
+    allData.push({
+      'Тип': 'ИТОГО',
+      'Дата': '',
+      'Описание': 'Расходы:',
+      'Детали': '',
+      'Сумма': totalExpenses,
+      'Способ оплаты': '',
+    });
+    
+    allData.push({
+      'Тип': 'ИТОГО',
+      'Дата': '',
+      'Описание': 'Чистая прибыль:',
+      'Детали': '',
+      'Сумма': netProfit,
+      'Способ оплаты': '',
+    });
+    
     exportToExcel(
-      data,
+      allData,
       `Report_${startDate}_${endDate}`,
-      ['ФИО', 'Паспорт', 'Страна', 'Комната', 'Заселение', 'Выселение', 'Дней', 'Цена', 'Оплачено', 'Баланс']
+      ['Тип', 'Дата', 'Описание', 'Детали', 'Сумма', 'Способ оплаты']
     );
   };
   
