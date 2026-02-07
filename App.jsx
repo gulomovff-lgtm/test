@@ -342,7 +342,7 @@ const printDocument = (type, guest, hostel) => {
         <div class="center bold" style="font-size: 14px;">${hostel?.name || 'N/A'}</div>
         <div class="center" style="font-size: 11px;">${hostel?.address || ''}</div>
         <div class="line"></div>
-        <div class="center bold">ЧЕК №${guest.id.slice(-8)}</div>
+        <div class="center bold">ЧЕК №${(guest.id || '').slice(-8).padStart(8, '0')}</div>
         <div class="center">${new Date().toLocaleString('ru-RU')}</div>
         <div class="line"></div>
         <table>
@@ -358,7 +358,7 @@ const printDocument = (type, guest, hostel) => {
           <tr><td>Итого:</td><td class="bold right">${guest.totalPrice || 0} сум</td></tr>
           <tr><td>Оплачено:</td><td class="bold right">${totalPaid} сум</td></tr>
           ${debt > 0 ? `<tr><td class="debt">ДОЛГ:</td><td class="debt right">${debt} сум</td></tr>` : ''}
-          ${balance >= 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
+          ${balance > 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
         </table>
         <div class="line"></div>
         <div class="center">Спасибо за визит!</div>
@@ -496,7 +496,7 @@ const printDocument = (type, guest, hostel) => {
       const stayDetails = getStayDetails(guest.checkInDate, guest.checkOutDate);
       html += `
         <h2>СПРАВКА О ПРОЖИВАНИИ</h2>
-        <p style="text-align: center; font-size: 14px;">№${guest.id.slice(-8)} от ${new Date().toLocaleDateString('ru-RU')}</p>
+        <p style="text-align: center; font-size: 14px;">№${(guest.id || '').slice(-8).padStart(8, '0')} от ${new Date().toLocaleDateString('ru-RU')}</p>
         <div class="info-block" style="margin-top: 40px; text-align: justify;">
           <p style="text-indent: 30px;">Настоящая справка выдана <strong>${guest.fullName || 'N/A'}</strong>, 
           паспорт <strong>${guest.passport || 'N/A'}</strong>, гражданин(ка) <strong>${guest.country || 'N/A'}</strong>, 
