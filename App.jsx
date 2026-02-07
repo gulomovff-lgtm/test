@@ -245,7 +245,7 @@ const calculateSalary = (shifts, staffMember) => {
 
 // Format guest ID for display in documents
 const formatGuestId = (id) => {
-  return (id || '').slice(-8).padStart(8, '0');
+  return String(id || '').slice(-8).padStart(8, '0');
 };
 
 // Export to Excel function - FIXED
@@ -285,6 +285,7 @@ const exportToExcel = (data, filename, headers) => {
             <x:ExcelWorksheet>
               <x:Name>Report</x:Name>
               <x:WorksheetOptions>
+                <x:DisplayGridlines/>
                 <x:Print><x:ValidPrinterInfo/></x:Print>
               </x:WorksheetOptions>
             </x:ExcelWorksheet>
@@ -364,7 +365,7 @@ const printDocument = (type, guest, hostel) => {
           <tr><td>Оплачено:</td><td class="bold right">${totalPaid} сум</td></tr>
           ${debt > 0 ? `<tr><td class="debt">ДОЛГ:</td><td class="debt right">${debt} сум</td></tr>` : ''}
           ${balance > 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
-          ${balance === 0 && debt === 0 ? `<tr><td colspan="2" class="center bold" style="color: green;">✓ Полностью оплачено</td></tr>` : ''}
+          ${balance === 0 ? `<tr><td colspan="2" class="center bold" style="color: green;">✓ Полностью оплачено</td></tr>` : ''}
         </table>
         <div class="line"></div>
         <div class="center">Спасибо за визит!</div>
