@@ -492,7 +492,7 @@ const printDocument = (type, guest, hostel) => {
               <td class="bold" colspan="2">УСЛУГИ</td>
             </tr>
             <tr>
-              <td>Проживание (${numberOfDays} ${numberOfDays === 1 ? 'день' : numberOfDays < 5 ? 'дня' : 'дней'} x ${pricePerNight.toLocaleString('ru-RU')})</td>
+              <td>Проживание (${numberOfDays} ${pluralize(numberOfDays, 'день', 'дня', 'дней')} x ${pricePerNight.toLocaleString('ru-RU')})</td>
               <td class="right bold">${totalPrice.toLocaleString('ru-RU')}</td>
             </tr>
           </table>
@@ -2734,10 +2734,12 @@ const ReportsView = ({ guests, expenses, rooms }) => {
     // Объединяем доходы и расходы
     const allData = [...incomeData, ...expenseData];
     
-    // Сортируем по дате
+    // Сортируем по дате (исправлено: правильное преобразование DD.MM.YYYY в YYYY-MM-DD)
     allData.sort((a, b) => {
-      const dateA = new Date(a['Дата'].split('.').reverse().join('-'));
-      const dateB = new Date(b['Дата'].split('.').reverse().join('-'));
+      const parts_a = a['Дата'].split('.');
+      const parts_b = b['Дата'].split('.');
+      const dateA = new Date(`${parts_a[2]}-${parts_a[1]}-${parts_a[0]}`);
+      const dateB = new Date(`${parts_b[2]}-${parts_b[1]}-${parts_b[0]}`);
       return dateA - dateB;
     });
     
