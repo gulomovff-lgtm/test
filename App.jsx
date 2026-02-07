@@ -245,6 +245,9 @@ const calculateSalary = (shifts, staffMember) => {
 
 // Export to Excel function - FIXED
 const exportToExcel = (data, filename, headers) => {
+  // UTF-8 BOM for proper Cyrillic character encoding in Excel
+  const BOM = '\uFEFF';
+  
   let tableHtml = '<table border="1"><thead><tr>';
   
   // Add headers
@@ -270,14 +273,14 @@ const exportToExcel = (data, filename, headers) => {
           xmlns:x="urn:schemas-microsoft-com:office:excel"
           xmlns="http://www.w3.org/TR/REC-html40">
     <head>
-      <meta charset="UTF-8">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
       <xml>
         <x:ExcelWorkbook>
           <x:ExcelWorksheets>
             <x:ExcelWorksheet>
-              <x:Name>Sheet1</x:Name>
+              <x:Name>Report</x:Name>
               <x:WorksheetOptions>
-                <x:DisplayGridlines/>
+                <x:Print><x:ValidPrinterInfo/></x:Print>
               </x:WorksheetOptions>
             </x:ExcelWorksheet>
           </x:ExcelWorksheets>
@@ -288,209 +291,250 @@ const exportToExcel = (data, filename, headers) => {
     </html>
   `;
   
-  const blob = new Blob([htmlContent], { 
+  const blob = new Blob([BOM + htmlContent], { 
     type: 'application/vnd.ms-excel;charset=utf-8' 
   });
   
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `${filename}.xls`;
+  link.download = filename.endsWith('.xls') ? filename : `${filename}.xls`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 };
 
-// Print document function - FIXED
+// Print document function - ENHANCED
 const printDocument = (type, guest, hostel) => {
-  const w = window.open('', '', 'width=800,height=600');
-  
-  let html = `
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>${type === 'check' ? 'Чек' : type === 'regcard' ? 'Анкета' : 'Справка'}</title>
-      <style>
-        body { 
-          font-family: Arial, sans-serif; 
-          padding: 20px;
-          line-height: 1.6;
-        }
-        h2 { 
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        table { 
-          width: 100%; 
-          border-collapse: collapse;
-          margin: 20px 0;
-        }
-        td, th { 
-          border: 1px solid #000; 
-          padding: 8px;
-          text-align: left;
-        }
-        th {
-          background-color: #f0f0f0;
-          font-weight: bold;
-        }
-        .info-block {
-          margin: 10px 0;
-        }
-        .signature {
-          margin-top: 40px;
-          display: flex;
-          justify-content: space-between;
-        }
-        @media print {
-          button { display: none; }
-        }
-      </style>
-    </head>
-    <body>
-  `;
-  
   const totalPaid = getTotalPaid(guest);
   const balance = (guest.totalPrice || 0) - totalPaid;
+  const debt = balance < 0 ? Math.abs(balance) : 0;
   
   if (type === 'check') {
-    html += `
-      <h2>ЧЕК №${guest.id}</h2>
-      <div class="info-block">
-        <p><strong>Хостел:</strong> ${hostel?.name || 'N/A'}</p>
-        <p><strong>Дата:</strong> ${new Date().toLocaleDateString('ru-RU')}</p>
-      </div>
-      <div class="info-block">
-        <p><strong>Гость:</strong> ${guest.fullName || 'N/A'}</p>
-        <p><strong>Паспорт:</strong> ${guest.passport || 'N/A'}</p>
-        <p><strong>Комната:</strong> ${guest.roomId || 'N/A'}</p>
-      </div>
-      <table>
-        <tr>
-          <th>Описание</th>
-          <th>Сумма</th>
-        </tr>
-        <tr>
-          <td>Количество дней</td>
-          <td>${guest.days || 0}</td>
-        </tr>
-        <tr>
-          <td>Цена за день</td>
-          <td>${guest.pricePerDay || 0} сум</td>
-        </tr>
-        <tr>
-          <td>Общая стоимость</td>
-          <td>${guest.totalPrice || 0} сум</td>
-        </tr>
-        <tr>
-          <td>Оплачено</td>
-          <td>${totalPaid} сум</td>
-        </tr>
-        <tr>
-          <td><strong>Баланс</strong></td>
-          <td><strong>${balance} сум</strong></td>
-        </tr>
-      </table>
-      <div class="signature">
-        <div>Кассир: _____________</div>
-        <div>Гость: _____________</div>
-      </div>
-    `;
-  } else if (type === 'regcard') {
-    html += `
-      <h2>АНКЕТА ГОСТЯ</h2>
-      <div class="info-block">
-        <p><strong>Хостел:</strong> ${hostel?.name || 'N/A'}</p>
-        <p><strong>Дата заселения:</strong> ${getLocalDateString(guest.checkInDate)}</p>
-      </div>
-      <table>
-        <tr>
-          <th>Поле</th>
-          <th>Значение</th>
-        </tr>
-        <tr>
-          <td>ФИО</td>
-          <td>${guest.fullName || ''}</td>
-        </tr>
-        <tr>
-          <td>Паспорт</td>
-          <td>${guest.passport || ''}</td>
-        </tr>
-        <tr>
-          <td>Страна</td>
-          <td>${guest.country || ''}</td>
-        </tr>
-        <tr>
-          <td>Дата рождения</td>
-          <td>${guest.birthDate || ''}</td>
-        </tr>
-        <tr>
-          <td>Телефон</td>
-          <td>${guest.phone || ''}</td>
-        </tr>
-        <tr>
-          <td>Email</td>
-          <td>${guest.email || ''}</td>
-        </tr>
-        <tr>
-          <td>Комната</td>
-          <td>${guest.roomId || ''}</td>
-        </tr>
-        <tr>
-          <td>Дата выезда</td>
-          <td>${getLocalDateString(guest.checkOutDate)}</td>
-        </tr>
-        <tr>
-          <td>Цена</td>
-          <td>${guest.totalPrice || 0} сум</td>
-        </tr>
-      </table>
-      <div class="signature">
-        <div>Администратор: _____________</div>
-        <div>Гость: _____________</div>
-      </div>
-    `;
-  } else if (type === 'ref') {
-    const stayDetails = getStayDetails(guest.checkInDate, guest.checkOutDate);
-    html += `
-      <h2>СПРАВКА О ПРОЖИВАНИИ</h2>
-      <p style="text-align: center;">№${guest.id} от ${new Date().toLocaleDateString('ru-RU')}</p>
-      <div class="info-block" style="margin-top: 30px;">
-        <p>Настоящая справка выдана ${guest.fullName || 'N/A'}, 
-        паспорт ${guest.passport || 'N/A'}, гражданину ${guest.country || 'N/A'}, 
-        в том, что он(а) проживал(а) в ${hostel?.name || 'N/A'} 
-        по адресу ${hostel?.address || 'N/A'}.</p>
-        
-        <p><strong>Период проживания:</strong> с ${getLocalDateString(guest.checkInDate)} 
-        по ${getLocalDateString(guest.checkOutDate)} (${stayDetails.days} ${pluralize(stayDetails.days, 'день', 'дня', 'дней')}).</p>
-        
-        <p><strong>Комната:</strong> ${guest.roomId || 'N/A'}</p>
-        
-        <p style="margin-top: 30px;">Справка выдана для предъявления по месту требования.</p>
-      </div>
-      <div class="signature">
-        <div>
-          <p>Администратор</p>
-          <p>_____________</p>
+    // Receipt-style compact format for checks
+    const w = window.open('', '', 'width=350,height=650');
+    const html = `
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Чек</title>
+        <style>
+          body { 
+            font-family: 'Courier New', monospace; 
+            width: 300px; 
+            padding: 15px;
+            margin: 0;
+            font-size: 12px;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .line { border-top: 1px dashed #000; margin: 8px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 3px 0; }
+          .right { text-align: right; }
+          .debt { color: red; font-weight: bold; }
+          @media print {
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="center bold" style="font-size: 14px;">${hostel?.name || 'N/A'}</div>
+        <div class="center" style="font-size: 11px;">${hostel?.address || ''}</div>
+        <div class="line"></div>
+        <div class="center bold">ЧЕК №${guest.id.slice(-8)}</div>
+        <div class="center">${new Date().toLocaleString('ru-RU')}</div>
+        <div class="line"></div>
+        <table>
+          <tr><td>Гость:</td><td class="bold right">${guest.fullName || 'N/A'}</td></tr>
+          <tr><td>Паспорт:</td><td class="right">${guest.passport || 'N/A'}</td></tr>
+          <tr><td>Комната:</td><td class="right">${guest.roomId || 'N/A'} / Место ${guest.bedId || '-'}</td></tr>
+          <tr><td>Заезд:</td><td class="right">${new Date(guest.checkInDate).toLocaleDateString('ru-RU')}</td></tr>
+          <tr><td>Дней:</td><td class="right">${guest.days || 0}</td></tr>
+        </table>
+        <div class="line"></div>
+        <table>
+          <tr><td>Цена/ночь:</td><td class="bold right">${guest.pricePerDay || 0} сум</td></tr>
+          <tr><td>Итого:</td><td class="bold right">${guest.totalPrice || 0} сум</td></tr>
+          <tr><td>Оплачено:</td><td class="bold right">${totalPaid} сум</td></tr>
+          ${debt > 0 ? `<tr><td class="debt">ДОЛГ:</td><td class="debt right">${debt} сум</td></tr>` : ''}
+          ${balance >= 0 ? `<tr><td>Остаток:</td><td class="bold right">${balance} сум</td></tr>` : ''}
+        </table>
+        <div class="line"></div>
+        <div class="center">Спасибо за визит!</div>
+        <div class="center" style="margin-top: 20px;">
+          <button onclick="window.print()" style="padding: 8px 16px; cursor: pointer;">
+            Печать
+          </button>
         </div>
-        <div>
-          <p>М.П.</p>
-        </div>
-      </div>
+      </body>
+      </html>
     `;
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // Standard format for registration card and certificate
+    const w = window.open('', '', 'width=800,height=600');
+    let html = `
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>${type === 'regcard' ? 'Анкета' : 'Справка'}</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          h2 { 
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          td, th { 
+            border: 1px solid #000; 
+            padding: 10px;
+            text-align: left;
+          }
+          th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            width: 40%;
+          }
+          .info-block {
+            margin: 15px 0;
+          }
+          .signature {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+          }
+          .signature > div {
+            text-align: center;
+          }
+          @media print {
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+    `;
+    
+    if (type === 'regcard') {
+      html += `
+        <h2>АНКЕТА ГОСТЯ</h2>
+        <div class="info-block">
+          <p><strong>Хостел:</strong> ${hostel?.name || 'N/A'}</p>
+          <p><strong>Адрес:</strong> ${hostel?.address || 'N/A'}</p>
+          <p><strong>Дата заселения:</strong> ${getLocalDateString(guest.checkInDate)}</p>
+        </div>
+        <table>
+          <tr>
+            <th>Поле</th>
+            <th>Значение</th>
+          </tr>
+          <tr>
+            <td>ФИО</td>
+            <td>${guest.fullName || ''}</td>
+          </tr>
+          <tr>
+            <td>Паспорт</td>
+            <td>${guest.passport || ''}</td>
+          </tr>
+          <tr>
+            <td>Страна</td>
+            <td>${guest.country || ''}</td>
+          </tr>
+          <tr>
+            <td>Дата рождения</td>
+            <td>${guest.birthDate || ''}</td>
+          </tr>
+          <tr>
+            <td>Телефон</td>
+            <td>${guest.phone || ''}</td>
+          </tr>
+          <tr>
+            <td>Email</td>
+            <td>${guest.email || ''}</td>
+          </tr>
+          <tr>
+            <td>Комната / Место</td>
+            <td>${guest.roomId || ''} / ${guest.bedId || ''}</td>
+          </tr>
+          <tr>
+            <td>Дата выезда</td>
+            <td>${getLocalDateString(guest.checkOutDate)}</td>
+          </tr>
+          <tr>
+            <td>Продолжительность</td>
+            <td>${guest.days || 0} дней</td>
+          </tr>
+          <tr>
+            <td>Стоимость проживания</td>
+            <td>${guest.totalPrice || 0} сум</td>
+          </tr>
+        </table>
+        <div class="signature">
+          <div>
+            <p>Администратор</p>
+            <p>_____________</p>
+          </div>
+          <div>
+            <p>Гость</p>
+            <p>_____________</p>
+          </div>
+        </div>
+      `;
+    } else if (type === 'ref') {
+      const stayDetails = getStayDetails(guest.checkInDate, guest.checkOutDate);
+      html += `
+        <h2>СПРАВКА О ПРОЖИВАНИИ</h2>
+        <p style="text-align: center; font-size: 14px;">№${guest.id.slice(-8)} от ${new Date().toLocaleDateString('ru-RU')}</p>
+        <div class="info-block" style="margin-top: 40px; text-align: justify;">
+          <p style="text-indent: 30px;">Настоящая справка выдана <strong>${guest.fullName || 'N/A'}</strong>, 
+          паспорт <strong>${guest.passport || 'N/A'}</strong>, гражданин(ка) <strong>${guest.country || 'N/A'}</strong>, 
+          в том, что он(а) действительно проживал(а) в <strong>${hostel?.name || 'N/A'}</strong> 
+          по адресу: <strong>${hostel?.address || 'N/A'}</strong>.</p>
+          
+          <p style="margin-top: 20px;"><strong>Период проживания:</strong> с ${getLocalDateString(guest.checkInDate)} 
+          по ${getLocalDateString(guest.checkOutDate)} (${stayDetails.days} ${pluralize(stayDetails.days, 'день', 'дня', 'дней')}).</p>
+          
+          <p><strong>Комната:</strong> ${guest.roomId || 'N/A'}</p>
+          
+          <p style="margin-top: 40px;">Справка выдана для предъявления по месту требования.</p>
+        </div>
+        <div class="signature">
+          <div>
+            <p>Директор/Администратор</p>
+            <p style="margin-top: 30px;">_____________</p>
+          </div>
+          <div>
+            <p>М.П.</p>
+          </div>
+        </div>
+      `;
+    }
+    
+    html += `
+      <div style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px;">
+          Печать
+        </button>
+      </div>
+      </body>
+      </html>
+    `;
+    
+    w.document.write(html);
+    w.document.close();
   }
-  
-  html += `
-    <div style="text-align: center; margin-top: 20px;">
-      <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-        Печать
-      </button>
-    </div>
-    </body>
-    </html>
-  `;
-  
-  w.document.write(html);
-  w.document.close();
 };
 
 // Normalize country name
